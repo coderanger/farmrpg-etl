@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "farmrpg-mod"
+version = "0.1.0"
+description = ""
+authors = ["Noah Kantrowitz <noah@coderanger.net>"]
+license = "Apache-2.0"
+readme = "README.md"
+packages = [{include = "farmrpg_mod", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+httpx = "^0.22.0"
+attrs = "^21.4.0"
+beautifulsoup4 = "^4.11.1"
+lxml = "^4.8.0"
+structlog = "^21.5.0"
+google-cloud-firestore = "^2.4.0"
+cattrs = "^22.1.0"
+exceptiongroup = "^1.0.0-rc.3"
+databases = {extras = ["sqlite"], version = "^0.5.5"}
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.1.1"
+freezegun = "^1.2.1"
+
+[tool.isort]
+known_first_party= ["farmrpg_mod"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

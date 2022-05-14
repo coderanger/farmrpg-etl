@@ -1,0 +1,152 @@
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+import pytest
+from freezegun import freeze_time
+
+from farmrpg_mod.scrapers.chat import _parse_chat, _parse_flags
+
+
+def _load_fixture(filename: str) -> bytes:
+    return (
+        (Path(__file__) / ".." / "fixtures" / f"{filename}.html")
+        .resolve()
+        .open("rb")
+        .read()
+    )
+
+
+@pytest.fixture
+def help_chat() -> bytes:
+    return _load_fixture("help")
+
+
+@pytest.fixture
+def complex_chat() -> bytes:
+    return _load_fixture("complex")
+
+
+@pytest.fixture
+def deleted_chat() -> bytes:
+    return _load_fixture("deleted")
+
+
+@pytest.fixture
+def long_chat() -> bytes:
+    return _load_fixture("long")
+
+
+@pytest.fixture
+def flags() -> bytes:
+    return _load_fixture("flags")
+
+
+@freeze_time("2022-04-17 23:59:59")
+def test_parse_chat(help_chat):
+    chats = list(_parse_chat("help", help_chat))
+    assert len(chats) == 100
+
+    assert chats[0].room == "help"
+    assert chats[0].id == "5364278"
+    assert chats[0].ts == datetime(2022, 4, 17, 1, 44, 56, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[0].username == "Nubishi"
+    assert chats[0].emblem == "def.png"
+    assert (
+        chats[0].content == "How many corn does it take usually to get the Runestone?"
+    )
+    assert chats[0].deleted is False
+
+
+@freeze_time("2022-04-17 23:59:59")
+def test_parse_complex_chat(complex_chat):
+    chats = list(_parse_chat("", complex_chat))
+    assert len(chats) == 2
+
+    assert chats[0].id == "5363775"
+    assert chats[0].ts == datetime(2022, 4, 17, 1, 28, 15, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[0].username == "coderanger"
+    assert chats[0].emblem == "Octopus96.png"
+    assert chats[0].content == '<i style="color:teal">coderanger also testing this</i>'
+    assert chats[0].deleted is False
+
+    assert chats[1].id == "5363757"
+    assert chats[1].ts == datetime(2022, 4, 17, 1, 27, 32, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[1].username == "coderanger"
+    assert chats[1].emblem == "Octopus96.png"
+    assert (
+        chats[1].content
+        == 'Testing some chat things, <a class="close-panel" href="item.php?id=48">'
+        '<img class="itemimgsm" src="/img/items/potato.png"></a>, '
+        '<a class="external chatlink" href="https://google.com," rel="noopener noreferrer" target="_blank">[LINK]</a> ✨'
+    )
+    assert chats[1].deleted is False
+
+
+@freeze_time("2022-04-17 23:59:59")
+def test_parse_chat_deleted(deleted_chat):
+    chats = list(_parse_chat("", deleted_chat))
+    assert len(chats) == 1
+
+    assert chats[0].id == "5365014"
+    assert chats[0].ts == datetime(2022, 4, 17, 2, 8, 22, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[0].username == "coderanger"
+    assert chats[0].emblem == "Octopus96.png"
+    assert chats[0].content == "A message so I can delete it."
+    assert chats[0].deleted is True
+
+
+@freeze_time("2022-04-17 23:59:59")
+def test_parse_chat_long(long_chat):
+    chats = list(_parse_chat("", long_chat))
+    assert len(chats) == 3
+
+    assert chats[0].id == "5365274"
+    assert chats[0].ts == datetime(2022, 4, 17, 2, 16, 37, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[0].username == "coderanger"
+    assert chats[0].emblem == "Octopus96.png"
+    assert (
+        chats[0].content
+        == "I also need a long message to test so: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do "
+        "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud "
+        "exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit "
+        "in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non "
+        "proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    )
+    assert chats[0].deleted is False
+
+    assert chats[2].id == "5365182"
+    assert chats[2].ts == datetime(2022, 4, 17, 2, 13, 50, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[2].username == "Ffff"
+    assert chats[2].emblem == "StrangeEgg96.png"
+    assert (
+        chats[2].content
+        == '<a class="close-panel" href="profile.php?user_name=coderanger" style="color:teal">@coderanger</a> Parse '
+        'this! <a class="no-animation close-panel" href="wiki.php?page=((inferno sphere" style="color:crimson; '
+        'font-weight:bold; text-decoration:underline">((inferno sphere</a><a class="no-animation close-panel" '
+        'href="wiki.php?page=))" style="color:crimson; font-weight:bold; text-decoration:underline">))</a> <a '
+        'class="no-animation close-panel" href="wiki.php?page= [Ffff] " style="color:crimson; font-weight:bold; '
+        'text-decoration:underline"> [Ffff] </a> ((puff<a class="no-animation close-panel" href="wiki.php?page=" '
+        'style="color:crimson; font-weight:bold; text-decoration:underline"></a>er)) pea&scy;ock -blam!-'
+    )
+    assert chats[2].deleted is False
+
+
+@freeze_time("2022-04-17 23:59:59")
+def test_parse_flags(flags):
+    chats = list(_parse_flags("", flags))
+    assert len(chats) == 59
+
+    assert chats[0].ts == datetime(2022, 4, 17, 1, 25, 32, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[0].username == "k-swag"
+    assert (
+        chats[0].content
+        == "Looking for (((Egg 06))? Well look no further. Head over to the Trade chat to purchase this "
+        "in-demand egg for the affordable price of 180g."
+    )
+    assert chats[0].flags == 2
+
+    assert chats[1].ts == datetime(2022, 4, 16, 22, 37, 4, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[1].username == "Katiepie"
+    assert chats[1].content == "Plz have straw"
+    assert chats[1].flags == 1
