@@ -17,7 +17,7 @@ START_TIME = datetime.now(tz=UTC)
 
 
 # Imports just to register data sinks.
-from .firestore import chat  # noqa
+# from .firestore import chat  # noqa
 
 
 @EVENTS.on("chat")
@@ -33,11 +33,15 @@ async def on_chat(msg: Message):
 async def main():
     channels = ["help", "global", "spoilers", "trade", "giveaways", "trivia", "staff"]
     for channel in channels:
-        create_periodic_task(ChatScraper(channel).run, 2, name=f"chat-scraper-{channel}")
+        create_periodic_task(
+            ChatScraper(channel).run, 2, name=f"chat-scraper-{channel}"
+        )
     # Wait for all chat loading to settle so the current message mappings are in place.
     await asyncio.sleep(30)
     for channel in channels:
-        create_periodic_task(ChatScraper(channel, flags=True).run, 30, name=f"flags-scraper-{channel}")
+        create_periodic_task(
+            ChatScraper(channel, flags=True).run, 30, name=f"flags-scraper-{channel}"
+        )
     while True:
         await asyncio.sleep(600)
 

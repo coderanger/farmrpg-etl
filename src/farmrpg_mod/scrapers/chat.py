@@ -19,7 +19,8 @@ MESSAGE_ID_RE = re.compile(r"^javascript:(?:un)?delChat\((\d+)\)$")
 FLAGS_RE = re.compile(r"^(\d+) flags?$")
 FORCEPATH_RE = re.compile(r"<strong>\w+path</strong>")
 AT_LINK_RE = re.compile(
-    r'<a class="close-panel" href="profile.php\?user_name=[^">]+" style="color:teal">(@[^">]+)</a>'
+    r'<a class="close-panel" href="profile.php\?user_name=[^">]+"'
+    r' style="color:teal">(@[^">]+)</a>'
 )
 
 

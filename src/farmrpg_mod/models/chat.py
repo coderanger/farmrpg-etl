@@ -2,7 +2,12 @@ from datetime import datetime
 
 import attrs
 
+from ..db.models import attrs_model
 
+
+@attrs_model(
+    fields=["room", "ts", "username", "flags", "deleted", "deleted_ts"]
+)
 @attrs.define
 class Message:
     room: str
