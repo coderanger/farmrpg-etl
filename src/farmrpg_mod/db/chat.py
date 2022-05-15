@@ -1,5 +1,6 @@
 import sqlite3
 
+import asyncpg
 import structlog
 
 from ..db import objects
@@ -14,7 +15,7 @@ async def on_chat(msg: Message):
     try:
         await objects(Message).create(msg)
     # TODO This should be a SQLAlchemy error once I ditch databases/orm.
-    except sqlite3.IntegrityError:
+    except (sqlite3.IntegrityError, asyncpg.exceptions.UniqueViolationError):
         pass  # Duplicate message, this is fine.
 
 

@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 import structlog
 
+from .db import database
 from .events import EVENTS
 from .models.chat import Message
 from .scrapers.chat import ChatScraper
@@ -20,18 +21,18 @@ START_TIME = datetime.now(tz=UTC)
 # from .firestore import chat  # noqa
 from .db import chat  # noqa
 
-
-@EVENTS.on("chat")
-async def on_chat(msg: Message):
-    # if msg.ts < START_TIME and msg.deleted_ts is None:
-    #     return
-    if msg.deleted:
-        print(f"{msg.room} | DELETED {msg.username}: {msg.content}")
-    else:
-        print(f"{msg.room} | {msg.username}: {msg.content}")
+# @EVENTS.on("chat")
+# async def on_chat(msg: Message):
+#     # if msg.ts < START_TIME and msg.deleted_ts is None:
+#     #     return
+#     if msg.deleted:
+#         print(f"{msg.room} | DELETED {msg.username}: {msg.content}")
+#     else:
+#         print(f"{msg.room} | {msg.username}: {msg.content}")
 
 
 async def main():
+    await database.connect()
     channels = ["help", "global", "spoilers", "trade", "giveaways", "trivia", "staff"]
     # channels = ["global", "help"]
     for channel in channels:
@@ -49,6 +50,10 @@ async def main():
 
 
 if __name__ == "__main__":
+    import sqlite3
+
+    sqlite3.enable_callback_tracebacks(True)
+
     structlog.configure(
         processors=[
             # If log level is too low, abort pipeline and throw away log entry.

@@ -1,16 +1,16 @@
-"""Create Messages
+"""Create message
 
-Revision ID: 3d5a4f21a517
+Revision ID: 420ff2a8e514
 Revises: 
-Create Date: 2022-05-15 00:33:32.482896
+Create Date: 2022-05-15 02:20:03.607565
 
 """
 from alembic import op
-import sqlalchemy as sa
+import sqlalchemy as sa  # noqa
 
 
 # revision identifiers, used by Alembic.
-revision = "3d5a4f21a517"
+revision = "420ff2a8e514"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -21,15 +21,15 @@ def upgrade():
     op.create_table(
         "message",
         sa.Column("rowid", sa.Integer(), nullable=False),
-        sa.Column("room", sa.Text(), nullable=False),
-        sa.Column("id", sa.Text(), nullable=False),
-        sa.Column("ts", sa.DateTime(), nullable=False),
-        sa.Column("emblem", sa.Text(), nullable=False),
-        sa.Column("username", sa.Text(), nullable=False),
-        sa.Column("content", sa.Text(), nullable=False),
+        sa.Column("room", sa.String(), nullable=False),
+        sa.Column("id", sa.String(), nullable=False),
+        sa.Column("ts", sa.TIMESTAMP(timezone=True), nullable=False),
+        sa.Column("emblem", sa.String(), nullable=False),
+        sa.Column("username", sa.String(), nullable=False),
+        sa.Column("content", sa.String(), nullable=False),
         sa.Column("flags", sa.Integer(), nullable=False),
         sa.Column("deleted", sa.Boolean(), nullable=False),
-        sa.Column("deleted_ts", sa.DateTime(), nullable=True),
+        sa.Column("deleted_ts", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.PrimaryKeyConstraint("rowid"),
     )
     with op.batch_alter_table("message", schema=None) as batch_op:
@@ -42,6 +42,7 @@ def upgrade():
         batch_op.create_index(
             batch_op.f("ix_message_flags"), ["flags"], unique=False
         )
+        batch_op.create_index(batch_op.f("ix_message_id"), ["id"], unique=True)
         batch_op.create_index(
             batch_op.f("ix_message_room"), ["room"], unique=False
         )
@@ -61,6 +62,7 @@ def downgrade():
         batch_op.drop_index(batch_op.f("ix_message_username"))
         batch_op.drop_index(batch_op.f("ix_message_ts"))
         batch_op.drop_index(batch_op.f("ix_message_room"))
+        batch_op.drop_index(batch_op.f("ix_message_id"))
         batch_op.drop_index(batch_op.f("ix_message_flags"))
         batch_op.drop_index(batch_op.f("ix_message_deleted_ts"))
         batch_op.drop_index(batch_op.f("ix_message_deleted"))

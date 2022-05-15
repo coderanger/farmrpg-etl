@@ -47,7 +47,13 @@ async def on_chat(msg: Message):
 async def on_flag(msg: Message):
     msg_id = id_map[msg.room].get(f"{msg.ts}|{msg.username}")
     if msg_id is not None:
-        doc_ref = rooms_col.document(msg.room).collection("chats").document(msg_id)
+        doc_ref = (
+            rooms_col.document(msg.room)
+            .collection("chats")
+            .document(msg_id)
+            .collection("mod")
+            .document("mod")
+        )
         log.debug("Writing flags", msg_id=msg_id, flags=msg.flags)
         await doc_ref.set({"flags": msg.flags}, merge=True)
     else:

@@ -8,6 +8,8 @@ import cattrs
 import orm
 import orm.fields
 import orm.models
+import sqlalchemy
+import typesystem
 
 from .conn import registry
 
@@ -18,11 +20,24 @@ _T = typing.TypeVar("_T")
 CAMEL_TO_SNAKE_RE = re.compile(r"(?<!^)(?=[A-Z])")
 
 
+class AnyLengthString(orm.fields.ModelField):
+    def get_validator(self, **kwargs) -> typesystem.Field:
+        return typesystem.String(**kwargs)
+
+    def get_column_type(self):
+        return sqlalchemy.String()
+
+
+class DateTimeWithTimestamp(orm.fields.DateTime):
+    def get_column_type(self):
+        return sqlalchemy.TIMESTAMP(timezone=True)
+
+
 PYTHON_TYPES_TO_ORM_FIELDS = {
-    str: orm.Text,
+    str: AnyLengthString,
     int: orm.Integer,
     bool: orm.Boolean,
-    datetime.datetime: orm.DateTime,
+    datetime.datetime: DateTimeWithTimestamp,
 }
 
 
