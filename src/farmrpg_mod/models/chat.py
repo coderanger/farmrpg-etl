@@ -2,12 +2,10 @@ from datetime import datetime
 
 import attrs
 
-from ..db.models import attrs_model
+from ..db import attrs_model
 
 
-@attrs_model(
-    fields=["room", "ts", "username", "flags", "deleted", "deleted_ts"]
-)
+@attrs_model(index=["!id", "room", "ts", "username", "flags", "deleted", "deleted_ts"])
 @attrs.define
 class Message:
     room: str

@@ -18,6 +18,7 @@ START_TIME = datetime.now(tz=UTC)
 
 # Imports just to register data sinks.
 # from .firestore import chat  # noqa
+from .db import chat  # noqa
 
 
 @EVENTS.on("chat")
@@ -32,6 +33,7 @@ async def on_chat(msg: Message):
 
 async def main():
     channels = ["help", "global", "spoilers", "trade", "giveaways", "trivia", "staff"]
+    # channels = ["global", "help"]
     for channel in channels:
         create_periodic_task(
             ChatScraper(channel).run, 2, name=f"chat-scraper-{channel}"
