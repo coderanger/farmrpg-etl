@@ -1,10 +1,20 @@
+import json
 import os
+import time
+
+import google.auth
 import httpx
+import structlog
+from google.cloud.iam_credentials import IAMCredentialsAsyncClient
 from starlette.requests import Request
-import firebase_admin.auth
 from starlette.responses import JSONResponse, Response
 
+log = structlog.stdlib.get_logger(mod="api.auth")
+
 client = httpx.AsyncClient()
+
+
+FIREBASE_AUD = "https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit"  # noqa
 
 
 async def login(request: Request) -> Response:
@@ -18,10 +28,24 @@ async def login(request: Request) -> Response:
             "returnSecureToken": True,
         },
     )
-    resp_json = await resp.json()
+    resp_json = resp.json()
     if resp.status_code != 200:
         return JSONResponse(resp_json, status_code=resp.status_code)
-    uid = resp_json["uid"]
-    firebase_admin.auth.create_custom_token
-
-    return JSONResponse({})
+    uid = resp_json["localId"]
+    creds = google.auth.default()
+    email = creds[0].service_account_email
+    now = time.time()
+    payload = {
+        "iss": email,
+        "sub": email,
+        "aud": FIREBASE_AUD,
+        "uid": uid,
+        "iat": now,
+        "exp": now + (60 * 60),
+        "claims": {"foo": "bar"},
+    }
+    jwt_resp = await IAMCredentialsAsyncClient().sign_jwt(  # type: ignore
+        name=f"projects/-/serviceAccounts/{email}",
+        payload=json.dumps(payload),
+    )
+    return JSONResponse({"key_id": jwt_resp.key_id, "signed_jwt": jwt_resp.signed_jwt})

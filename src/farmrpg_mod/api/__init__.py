@@ -11,4 +11,4 @@ async def hello_world(request: Request) -> Response:
     )
 
 
-routes = [Route("/login", login), Route("/{p:path}", hello_world)]
+routes = [Route("/login", login, methods=["POST"]), Route("/{p:path}", hello_world)]

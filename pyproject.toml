@@ -21,6 +21,7 @@ orm = {git = "https://github.com/encode/orm.git", extras=["postgresql"]}
 starlette = "^0.20.0"
 uvicorn = {extras = ["standard"], version = "^0.17.6"}
 firebase-admin = "^5.2.0"
+google-cloud-iam = "^2.6.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1.1"
