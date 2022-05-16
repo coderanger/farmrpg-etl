@@ -5,7 +5,10 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import structlog
+import uvicorn
+from starlette.applications import Starlette
 
+from .api import routes
 from .db import database
 from .events import EVENTS
 from .models.chat import Message
@@ -16,23 +19,25 @@ UTC = ZoneInfo("UTC")
 
 START_TIME = datetime.now(tz=UTC)
 
+log = structlog.stdlib.get_logger(mod="main")
 
 # Imports just to register data sinks.
 # from .firestore import chat  # noqa
 from .db import chat  # noqa
 
-# @EVENTS.on("chat")
-# async def on_chat(msg: Message):
-#     # if msg.ts < START_TIME and msg.deleted_ts is None:
-#     #     return
-#     if msg.deleted:
-#         print(f"{msg.room} | DELETED {msg.username}: {msg.content}")
-#     else:
-#         print(f"{msg.room} | {msg.username}: {msg.content}")
+
+@EVENTS.on("chat")
+async def on_chat(msg: Message):
+    if msg.ts < START_TIME and msg.deleted_ts is None:
+        return
+    if msg.deleted:
+        print(f"{msg.room} | DELETED {msg.username}: {msg.content}")
+    else:
+        print(f"{msg.room} | {msg.username}: {msg.content}")
 
 
-async def main():
-    await database.connect()
+async def start_etl():
+    log.info("Starting ETL processing")
     channels = ["help", "global", "spoilers", "trade", "giveaways", "trivia", "staff"]
     # channels = ["global", "help"]
     for channel in channels:
@@ -45,15 +50,22 @@ async def main():
         create_periodic_task(
             ChatScraper(channel, flags=True).run, 30, name=f"flags-scraper-{channel}"
         )
-    while True:
-        await asyncio.sleep(600)
+    log.info("ETL processing started")
+
+
+async def on_startup():
+    await database.connect()
+    asyncio.create_task(start_etl(), name="start_etl")
+
+
+app = Starlette(
+    debug=True,
+    routes=routes,
+    # on_startup=[on_startup],
+)
 
 
 if __name__ == "__main__":
-    import sqlite3
-
-    sqlite3.enable_callback_tracebacks(True)
-
     structlog.configure(
         processors=[
             # If log level is too low, abort pipeline and throw away log entry.
@@ -86,4 +98,8 @@ if __name__ == "__main__":
         level=logging.INFO,
         # level=logging.DEBUG,
     )
-    asyncio.run(main())
+    uvicorn.run(
+        app,  # type: ignore https://github.com/encode/starlette/discussions/1513
+        host="127.0.0.1",
+        port=8008,
+    )
