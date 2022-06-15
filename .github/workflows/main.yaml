@@ -38,7 +38,7 @@ jobs:
       - run: poetry install
       - run: poetry run pytest
         env:
-          TEST_DATABASE_URI: postgresql://postgres:secret@localhost/postgres
+          TEST_DATABASE_URI: postgresql://postgres:secret@localhost/test
 
   build:
     name: Container Build
