@@ -3,8 +3,9 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-import farmrpg_mod.models.chat  # noqa: F401
-from farmrpg_mod.db import DATABASE_URL, registry
+import farmrpg_etl.models.chat  # noqa: F401
+import farmrpg_etl.models.user  # noqa: F401
+from farmrpg_etl.db import DATABASE_URL, registry
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

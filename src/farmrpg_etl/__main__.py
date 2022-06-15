@@ -2,17 +2,24 @@ import asyncio
 import logging
 import sys
 from datetime import datetime
+from typing import Optional
 from zoneinfo import ZoneInfo
 
 import structlog
+import typer
 import uvicorn
 from starlette.applications import Starlette
+from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
+
+from farmrpg_etl.models.user import UserSnapshot
 
 from .api import routes
 from .db import database
 from .events import EVENTS
 from .models.chat import Message
 from .scrapers.chat import ChatScraper
+from .scrapers.user import OnlineScraper
 from .tasks import create_periodic_task
 
 UTC = ZoneInfo("UTC")
@@ -22,8 +29,8 @@ START_TIME = datetime.now(tz=UTC)
 log = structlog.stdlib.get_logger(mod="main")
 
 # Imports just to register data sinks.
-# from .firestore import chat  # noqa
-from .db import chat  # noqa
+from .db import chat, user  # noqa
+from .firestore import chat  # noqa
 
 
 @EVENTS.on("chat")
@@ -36,13 +43,19 @@ async def on_chat(msg: Message):
         print(f"{msg.room} | {msg.username}: {msg.content}")
 
 
+@EVENTS.on("new_user_snapshot")
+async def on_snap(snap: UserSnapshot):
+    print(f"Updated snapshot for {snap.username} ({snap.user.id})")
+
+
 async def start_etl():
     log.info("Starting ETL processing")
+    create_periodic_task(OnlineScraper().run, 600, name="online-scraper")
     channels = ["help", "global", "spoilers", "trade", "giveaways", "trivia", "staff"]
     # channels = ["global", "help"]
     for channel in channels:
         create_periodic_task(
-            ChatScraper(channel).run, 2, name=f"chat-scraper-{channel}"
+            ChatScraper(channel).run, 1, name=f"chat-scraper-{channel}"
         )
     # Wait for all chat loading to settle so the current message mappings are in place.
     await asyncio.sleep(30)
@@ -55,17 +68,25 @@ async def start_etl():
 
 async def on_startup():
     await database.connect()
+    EVENTS.emit("startup")
     asyncio.create_task(start_etl(), name="start_etl")
 
 
 app = Starlette(
     debug=True,
     routes=routes,
-    # on_startup=[on_startup],
+    on_startup=[on_startup],
+    middleware=[
+        Middleware(
+            CORSMiddleware,
+            allow_origins=["*"],  # For now ...
+            allow_methods=["GET", "HEAD", "POST"],
+        ),
+    ],
 )
 
 
-if __name__ == "__main__":
+def main(tls: Optional[str] = None, debug: bool = False):
     structlog.configure(
         processors=[
             # If log level is too low, abort pipeline and throw away log entry.
@@ -95,11 +116,23 @@ if __name__ == "__main__":
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
-        level=logging.INFO,
-        # level=logging.DEBUG,
+        level=logging.DEBUG if debug else logging.INFO,
     )
+
+    extra_options = {}
+    if tls:
+        extra_options.update({
+            "ssl_keyfile": f"{tls}/tls.key",
+            "ssl_certfile": f"{tls}/tls.crt",
+        })
+
     uvicorn.run(
         app,  # type: ignore https://github.com/encode/starlette/discussions/1513
         host="127.0.0.1",
-        port=8008,
+        port=8443 if tls else 8008,
+        **extra_options,
     )
+
+
+if __name__ == "__main__":
+    typer.run(main)

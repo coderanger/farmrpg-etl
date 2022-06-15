@@ -1,45 +1,35 @@
 from datetime import datetime
-from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
 from freezegun import freeze_time
 
-from farmrpg_mod.scrapers.chat import _parse_chat, _parse_flags
-
-
-def _load_fixture(filename: str) -> bytes:
-    return (
-        (Path(__file__) / ".." / "fixtures" / f"{filename}.html")
-        .resolve()
-        .open("rb")
-        .read()
-    )
+from farmrpg_etl.scrapers.chat import _parse_chat, _parse_flags
 
 
 @pytest.fixture
-def help_chat() -> bytes:
-    return _load_fixture("help")
+def help_chat(load_fixture) -> bytes:
+    return load_fixture("chat_help")
 
 
 @pytest.fixture
-def complex_chat() -> bytes:
-    return _load_fixture("complex")
+def complex_chat(load_fixture) -> bytes:
+    return load_fixture("chat_complex")
 
 
 @pytest.fixture
-def deleted_chat() -> bytes:
-    return _load_fixture("deleted")
+def deleted_chat(load_fixture) -> bytes:
+    return load_fixture("chat_deleted")
 
 
 @pytest.fixture
-def long_chat() -> bytes:
-    return _load_fixture("long")
+def long_chat(load_fixture) -> bytes:
+    return load_fixture("chat_long")
 
 
 @pytest.fixture
-def flags() -> bytes:
-    return _load_fixture("flags")
+def flags(load_fixture) -> bytes:
+    return load_fixture("flags")
 
 
 @freeze_time("2022-04-17 23:59:59")
@@ -121,13 +111,15 @@ def test_parse_chat_long(long_chat):
     assert chats[2].emblem == "StrangeEgg96.png"
     assert (
         chats[2].content
-        == '<a class="close-panel" href="profile.php?user_name=coderanger" style="color:teal">@coderanger</a> Parse '
-        'this! <a class="no-animation close-panel" href="wiki.php?page=((inferno sphere" style="color:crimson; '
-        'font-weight:bold; text-decoration:underline">((inferno sphere</a><a class="no-animation close-panel" '
-        'href="wiki.php?page=))" style="color:crimson; font-weight:bold; text-decoration:underline">))</a> <a '
-        'class="no-animation close-panel" href="wiki.php?page= [Ffff] " style="color:crimson; font-weight:bold; '
-        'text-decoration:underline"> [Ffff] </a> ((puff<a class="no-animation close-panel" href="wiki.php?page=" '
-        'style="color:crimson; font-weight:bold; text-decoration:underline"></a>er)) pea&scy;ock -blam!-'
+        == '@coderanger: Parse this! <a class="no-animation close-panel" '
+        'href="wiki.php?page=((inferno sphere" style="color:crimson; font-weight:bold; '
+        'text-decoration:underline">((inferno sphere</a><a class="no-animation close-panel" '
+        'href="wiki.php?page=))" style="color:crimson; font-weight:bold; '
+        'text-decoration:underline">))</a> <a class="no-animation close-panel" '
+        'href="wiki.php?page= [Ffff] " style="color:crimson; font-weight:bold; '
+        'text-decoration:underline"> [Ffff] </a> ((puff<a class="no-animation close-panel" '
+        'href="wiki.php?page=" style="color:crimson; font-weight:bold; text-decoration:'
+        'underline"></a>er)) pea&scy;ock -blam!-'
     )
     assert chats[2].deleted is False
 

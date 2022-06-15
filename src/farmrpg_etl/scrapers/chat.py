@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup, Tag
 from ..events import EVENTS
 from ..http import client
 from ..models.chat import Message
+from .errors import ParseError
 
 UTC = ZoneInfo("UTC")
 SERVER_TIME = ZoneInfo("America/Chicago")
@@ -25,10 +26,6 @@ AT_LINK_RE = re.compile(
 
 
 log = structlog.stdlib.get_logger(mod="scrapers.chat")
-
-
-class ParseError(Exception):
-    pass
 
 
 def _parse_chat(room: str, content: bytes) -> Iterable[Message]:

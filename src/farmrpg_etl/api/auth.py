@@ -9,6 +9,9 @@ from google.cloud.iam_credentials import IAMCredentialsAsyncClient
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+from ..db import objects
+from ..models.user import UserSnapshot
+
 log = structlog.stdlib.get_logger(mod="api.auth")
 
 client = httpx.AsyncClient()
@@ -35,6 +38,16 @@ async def login(request: Request) -> Response:
     creds = google.auth.default()
     email = creds[0].service_account_email
     now = time.time()
+    claims = {}
+    # Check for a user in the database matching this uid.
+    user_snap = (
+        await objects(UserSnapshot).order_by("-ts").first(user__firebase_uid=uid)
+    )
+    if user_snap is not None:
+        if user_snap.is_ranger:
+            claims["role"] = "ranger"
+        elif user_snap.is_farmhand:
+            claims["role"] = "farmhand"
     payload = {
         "iss": email,
         "sub": email,
@@ -42,7 +55,7 @@ async def login(request: Request) -> Response:
         "uid": uid,
         "iat": now,
         "exp": now + (60 * 60),
-        "claims": {"foo": "bar"},
+        "claims": claims,
     }
     jwt_resp = await IAMCredentialsAsyncClient().sign_jwt(  # type: ignore
         name=f"projects/-/serviceAccounts/{email}",

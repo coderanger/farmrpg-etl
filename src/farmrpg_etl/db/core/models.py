@@ -13,11 +13,24 @@ import typesystem
 
 from .conn import registry
 
-_C = typing.TypeVar("_C", bound=type)
 _T = typing.TypeVar("_T")
+# _C = typing.TypeVar("_C", bound=type)
+_C = type[_T]
 
 
 CAMEL_TO_SNAKE_RE = re.compile(r"(?<!^)(?=[A-Z])")
+
+
+def cattrs_structure_datetime(
+    data: str | datetime.datetime, type_: type
+) -> datetime.datetime:
+    if isinstance(data, datetime.datetime):
+        return data
+    else:
+        return datetime.datetime.fromisoformat(data)
+
+
+cattrs.register_structure_hook(datetime.datetime, cattrs_structure_datetime)
 
 
 class AnyLengthString(orm.fields.ModelField):
@@ -58,6 +71,13 @@ def attribute_to_field(attr: attrs.Attribute, **kwargs) -> orm.fields.ModelField
         kwargs["default"] = attr.default
     kwargs["allow_null"] = nullable
 
+    # Check if this is a FK.
+    if hasattr(primary_type, "orm_model"):
+        kwargs.pop("index", None)
+        unique = kwargs.pop("unique", None)
+        orm_field_type = orm.OneToOne if unique else orm.ForeignKey
+        return orm_field_type(primary_type.orm_model, **kwargs)  # type: ignore
+
     # Build the field object.
     orm_field_type = PYTHON_TYPES_TO_ORM_FIELDS.get(primary_type)
     if orm_field_type is None:
@@ -66,7 +86,11 @@ def attribute_to_field(attr: attrs.Attribute, **kwargs) -> orm.fields.ModelField
 
 
 def orm_model_for_class(
-    cls: type, table_name: str, primary_key: str | None, index: dict[str, bool]
+    cls: type,
+    table_name: str,
+    primary_key: str | None,
+    index: dict[str, bool],
+    primary_key_writable: bool,
 ) -> type:
     attributes = attrs.fields_dict(attrs.resolve_types(cls))
     orm_fields = {}
@@ -78,6 +102,8 @@ def orm_model_for_class(
             primary_key=True,
             index=True,
         )
+    if primary_key_writable:
+        orm_fields[primary_key or "rowid"].validator.read_only = False
     for name, attr in attributes.items():
         if primary_key is not None and name == primary_key:
             continue
@@ -126,14 +152,26 @@ class AttrsQuerySet(typing.Generic[_T], orm.models.QuerySet):
     def __get__(self, instance, owner):
         return self.__class__(model_cls=owner.orm_model)
 
-    def create(self, _obj: _T | None = None, /, **kwargs):
+    def create(self, _obj: _T | None = None, /, **kwargs) -> typing.Awaitable[_T]:
         if _obj is not None:
-            kwargs = cattrs.unstructure(_obj) | kwargs
+            # Use asdict instead of cattrs because we only want the top-level expanded.
+            kwargs = attrs.asdict(_obj, recurse=False) | kwargs
         return super().create(**kwargs)
+
+    def get(self, **kwargs) -> typing.Awaitable[_T]:
+        return super().get(**kwargs)
+
+    def first(self, **kwargs) -> typing.Awaitable[_T | None]:
+        return super().first(**kwargs)
 
 
 def _attrs_model(
-    cls: _C, *, primary_key: str | None, index: list[str], table_name: str | None
+    cls: _C,
+    *,
+    primary_key: str | None,
+    index: list[str],
+    table_name: str | None,
+    primary_key_writable: bool,
 ) -> _C:
     if table_name is None:
         table_name = CAMEL_TO_SNAKE_RE.sub("_", cls.__name__).lower()
@@ -145,10 +183,27 @@ def _attrs_model(
             unique = True
             f = f[1:]
         index_dict[f] = unique
-    orm_model = orm_model_for_class(
-        cls, table_name=table_name, primary_key=primary_key, index=index_dict
+    cls.orm_model = orm_model_for_class(
+        cls,
+        table_name=table_name,
+        primary_key=primary_key,
+        index=index_dict,
+        primary_key_writable=primary_key_writable,
     )
-    setattr(cls, "orm_model", orm_model)
+
+    @property
+    def pk(self):
+        return getattr(self, primary_key or "rowid")
+
+    cls.pk = pk
+
+    def structure_hook(data: _T | dict[str, typing.Any], type_: _C) -> _T:
+        if isinstance(data, cls):
+            return typing.cast(_T, data)
+        else:
+            return type_(**data)
+
+    cattrs.register_structure_hook(cls, structure_hook)
     return cls
 
 
@@ -158,6 +213,7 @@ def attrs_model(
     primary_key: str | None = None,
     index: list[str] = [],
     table_name: str | None = None,
+    primary_key_writable: bool = False,
 ) -> typing.Callable[[_C], _C]:
     ...
 
@@ -173,18 +229,27 @@ def attrs_model(
     primary_key: str | None = None,
     index: list[str] = [],
     table_name: str | None = None,
+    primary_key_writable: bool = False,
 ) -> typing.Callable[[_C], _C] | _C:
     if cls is None:
 
         def wrapper(cls: _C) -> _C:
             return _attrs_model(
-                cls, primary_key=primary_key, index=index, table_name=table_name
+                cls,
+                primary_key=primary_key,
+                index=index,
+                table_name=table_name,
+                primary_key_writable=primary_key_writable,
             )
 
         return wrapper
     else:
         return _attrs_model(
-            cls, primary_key=primary_key, index=index, table_name=table_name
+            cls,
+            primary_key=primary_key,
+            index=index,
+            table_name=table_name,
+            primary_key_writable=primary_key_writable,
         )
 
 
