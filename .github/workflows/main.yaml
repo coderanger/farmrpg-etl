@@ -39,6 +39,7 @@ jobs:
       - run: poetry run pytest
         env:
           TEST_DATABASE_URI: postgresql://postgres:secret@localhost/test
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
 
   build:
     name: Container Build
