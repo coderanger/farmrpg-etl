@@ -23,6 +23,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+        - 5432:5432
 
     steps:
       - uses: actions/checkout@v3
@@ -36,7 +38,7 @@ jobs:
       - run: poetry install
       - run: poetry run pytest
         env:
-          TEST_DATABASE_URI: postgresql://postgres:secret@postgres/postgres
+          TEST_DATABASE_URI: postgresql://postgres:secret@localhost/postgres
 
   build:
     name: Container Build
