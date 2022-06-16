@@ -25,6 +25,7 @@ async def login(request: Request) -> Response:
     resp = await client.post(
         "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword",
         params={"key": os.environ["WEB_API_KEY"]},
+        headers={"Referer": os.environ["WEB_API_REFERER"]},
         json={
             "email": data["email"],
             "password": data["password"],
