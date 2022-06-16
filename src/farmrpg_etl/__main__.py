@@ -86,7 +86,9 @@ app = Starlette(
 )
 
 
-def main(tls: Optional[str] = None, debug: bool = False):
+def main(
+    tls: Optional[str] = None, debug: bool = False, listen: str = "127.0.0.1:8008"
+):
     structlog.configure(
         processors=[
             # If log level is too low, abort pipeline and throw away log entry.
@@ -128,10 +130,12 @@ def main(tls: Optional[str] = None, debug: bool = False):
             }
         )
 
+    host, port = listen.split(":")
+
     uvicorn.run(
         app,  # type: ignore https://github.com/encode/starlette/discussions/1513
-        host="127.0.0.1",
-        port=443 if tls else 8008,
+        host=host,
+        port=int(port),
         **extra_options,
     )
 
