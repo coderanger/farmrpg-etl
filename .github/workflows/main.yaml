@@ -36,10 +36,14 @@ jobs:
           cache: 'poetry'
       - run: poetry env use $(which python3.10)
       - run: poetry install
+      - run: echo ${GOOGLE_CREDENTIALS} > .creds.json
       - run: poetry run pytest
         env:
           TEST_DATABASE_URI: postgresql://postgres:secret@localhost/test
-          AUTH_COOKIE: ${{ secrets.AUTH_TOKEN }}
+          AUTH_COOKIE: ${{ secrets.AUTH_COOKIE }}
+          BOT_AUTH_COOKIE: ${{ secrets.AUTH_COOKIE }}
+          GOOGLE_APPLICATION_CREDENTIALS: .creds.json
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
 
   build:
     name: Container Build

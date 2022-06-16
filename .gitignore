@@ -1,2 +1,3 @@
 .creds.json
+.creds-test.json
 db.sqlite
