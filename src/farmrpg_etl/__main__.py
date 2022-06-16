@@ -121,15 +121,17 @@ def main(tls: Optional[str] = None, debug: bool = False):
 
     extra_options = {}
     if tls:
-        extra_options.update({
-            "ssl_keyfile": f"{tls}/tls.key",
-            "ssl_certfile": f"{tls}/tls.crt",
-        })
+        extra_options.update(
+            {
+                "ssl_keyfile": f"{tls}/tls.key",
+                "ssl_certfile": f"{tls}/tls.crt",
+            }
+        )
 
     uvicorn.run(
         app,  # type: ignore https://github.com/encode/starlette/discussions/1513
         host="127.0.0.1",
-        port=8443 if tls else 8008,
+        port=443 if tls else 8008,
         **extra_options,
     )
 
