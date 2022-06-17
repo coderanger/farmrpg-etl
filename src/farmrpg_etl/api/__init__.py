@@ -2,7 +2,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
-from .auth import login
+# from .auth import login
 
 
 async def hello_world(request: Request) -> Response:
@@ -11,4 +11,9 @@ async def hello_world(request: Request) -> Response:
     )
 
 
-routes = [Route("/login", login, methods=["POST"]), Route("/{p:path}", hello_world)]
+async def not_found(request: Request) -> Response:
+    return Response("", status_code=404)
+
+
+# routes = [Route("/login", login, methods=["POST"]), Route("/{p:path}", hello_world)]
+routes = [Route("/", not_found)]
