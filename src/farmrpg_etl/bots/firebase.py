@@ -1,6 +1,7 @@
 from ..db import objects
 from ..events import EVENTS
-from ..models.user import User
+from ..firebase import set_custom_user_claims
+from ..models.user import User, UserSnapshot
 from .base import BotMessage
 
 
@@ -13,9 +14,19 @@ async def on_register(msg: BotMessage):
         return
     user_id = await msg.user_id()
     try:
-        rows_updated = await objects(User).filter(id=user_id).update(firebase_uid=msg.args)
+        rows_updated = (
+            await objects(User).filter(id=user_id).update(firebase_uid=msg.args)
+        )
         if rows_updated == 0:
             await objects(User).create(id=user_id, firebase_uid=msg.args)
+
+        snap = await objects(UserSnapshot).order_by("-ts").first(user__id=user_id)
+        if snap is not None and (snap.is_farmhand or snap.is_ranger):
+            role = "ranger" if snap.is_ranger else "farmhand"
+            resp = await set_custom_user_claims(
+                msg.args, {"username": snap.username, "role": role}
+            )
+            resp.raise_for_status()
     except Exception:
         await msg.reply(
             "Something went wrong, please contact Coderanger for assistance."
