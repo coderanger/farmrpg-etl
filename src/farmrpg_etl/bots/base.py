@@ -38,20 +38,23 @@ def try_dispatch(msg: Mail, line: str) -> tuple[bool, BotMessage]:
     if len(parts) > 1:
         cmd, args = parts
     else:
-        cmd = parts[0]
+        cmd = parts[0] if parts else ""
         args = None
     # .lower() is for mobile keyboards.
     cmd = cmd.lower()
 
     # Dispatch if possible.
     bot_msg = BotMessage(msg=msg, cmd=cmd, args=args)
+    if not cmd.strip():
+        return False, bot_msg
     return EVENTS.emit(f"bot_dm.{cmd}", msg=bot_msg), bot_msg
 
 
 @EVENTS.on("dm")
 async def on_dm(msg: Mail):
     # First parse the first line of the message looking for a command.
-    line = BR_RE.sub("\n", msg.content).splitlines()[0]
+    lines = BR_RE.sub("\n", msg.content).splitlines()
+    line = lines[0] if lines else ""
     handled, bot_msg = try_dispatch(msg, line)
     if not handled:
         # Try again with the subject line.
