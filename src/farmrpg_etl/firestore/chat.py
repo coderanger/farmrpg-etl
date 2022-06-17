@@ -7,6 +7,7 @@ from google.cloud import firestore
 
 from ..events import EVENTS
 from ..models.chat import Message
+from ..utils.cache import FixedSizeCache
 
 MENTION_RE = re.compile(r"@([^:\s]+(?:[^:]{0,29}?[^:\s](?=:))?)")
 
@@ -17,20 +18,9 @@ rooms_col = db.collection("rooms")
 log = structlog.stdlib.get_logger(mod="firestore.chat")
 
 
-class MessageIDCache(dict[str, str]):
-    def __init__(self, max_size: int):
-        super().__init__()
-        self.__max_size = max_size
-
-    def __setitem__(self, key: str, value: str) -> None:
-        super().__setitem__(key, value)
-        if len(self) > self.__max_size:
-            oldest_key = next(iter(self.keys()))
-            del self[oldest_key]
-
-
 # A cache used to mapping message IDs on flags because it's not (yet) included.
-id_map = defaultdict(lambda: MessageIDCache(110))
+MessageIDCache = FixedSizeCache[str, str]
+id_map = defaultdict[str, MessageIDCache](lambda: MessageIDCache(110))
 
 
 # A set of all existing room docs to be used to avoid extraneous writes.

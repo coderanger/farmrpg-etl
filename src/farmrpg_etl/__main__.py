@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import sys
 from datetime import datetime
 from typing import Optional
@@ -12,13 +13,13 @@ from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 
-from farmrpg_etl.models.user import UserSnapshot
-
 from .api import routes
 from .db import database
 from .events import EVENTS
 from .models.chat import Message
+from .models.user import UserSnapshot
 from .scrapers.chat import ChatScraper
+from .scrapers.mailbox import MailboxScraper
 from .scrapers.user import OnlineScraper
 from .tasks import create_periodic_task
 
@@ -29,6 +30,7 @@ START_TIME = datetime.now(tz=UTC)
 log = structlog.stdlib.get_logger(mod="main")
 
 # Imports just to register data sinks.
+from . import bots  # noqa
 from .db import chat, user  # noqa
 from .firestore import chat  # noqa
 
@@ -51,6 +53,7 @@ async def on_snap(snap: UserSnapshot):
 async def start_etl():
     log.info("Starting ETL processing")
     create_periodic_task(OnlineScraper().run, 600, name="online-scraper")
+    create_periodic_task(MailboxScraper().run, 10, name="mailbox-scraper")
     channels = ["help", "global", "spoilers", "trade", "giveaways", "trivia", "staff"]
     # channels = ["global", "help"]
     for channel in channels:
@@ -79,7 +82,8 @@ app = Starlette(
     middleware=[
         Middleware(
             CORSMiddleware,
-            allow_origins=["*"],  # For now ...
+            # I don't feel like doing the gymnastics to get CLI options here ...
+            allow_origins=[os.environ.get("ALLOW_ORIGIN", "*")],
             allow_methods=["GET", "HEAD", "POST"],
         ),
     ],

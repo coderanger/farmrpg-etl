@@ -74,11 +74,15 @@ def _parse_online(content: bytes) -> Iterable[str]:
 class UserScraper:
     username: str
 
-    async def run(self) -> None:
-        log.debug("Starting user scrape", username=self.username)
+    # This is used when the bot receives a DM to get an up-to-date user ID.
+    async def scrape(self) -> UserSnapshot:
         resp = await client.get("profile.php", params={"user_name": self.username})
         resp.raise_for_status()
-        snap = _parse_profile(self.username, resp.content)
+        return _parse_profile(self.username, resp.content)
+
+    async def run(self) -> None:
+        log.debug("Starting user scrape", username=self.username)
+        snap = await self.scrape()
         EVENTS.emit("user_snapshot", snap=snap)
         log.debug("Finished user scrape", username=self.username, user_id=snap.user.id)
 

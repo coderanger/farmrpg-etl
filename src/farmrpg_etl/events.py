@@ -14,12 +14,15 @@ class EventHub:
     def __init__(self) -> None:
         self.listeners: dict[str, list[Callable[..., Coroutine]]] = defaultdict(list)
 
-    def emit(self, key: str, *args, **kwargs) -> None:
+    def emit(self, key: str, *args, **kwargs) -> bool:
+        found_handler = False
         key_parts = key.split(".")
         for i in range(len(key_parts), 0, -1):
             partial_key = ".".join(key_parts[:i])
             for listener in self.listeners[partial_key]:
                 asyncio.create_task(listener(*args, **kwargs))
+                found_handler = True
+        return found_handler
 
     @overload
     def on(self, key_pattern: str) -> Callable[[A], A]:
