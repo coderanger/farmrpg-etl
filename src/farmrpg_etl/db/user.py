@@ -37,4 +37,4 @@ async def on_snap(snap: UserSnapshot):
     except Exception:
         log.exception("Error saving snapshot", username=snap.username, user_id=user_id)
         raise
-    EVENTS.emit("new_user_snapshot", snap=snap)
+    EVENTS.emit("new_user_snapshot", snap=snap, last_snap=last_snap)

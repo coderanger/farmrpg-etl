@@ -25,10 +25,12 @@ google_client = httpx.AsyncClient(event_hooks={"request": [_add_token]})
 
 
 async def set_custom_user_claims(uid: str, claims: dict[str, str]) -> httpx.Response:
-    return await google_client.post(
+    resp = await google_client.post(
         "https://identitytoolkit.googleapis.com/v1/accounts:update",
         json={
             "localId": uid,
             "customAttributes": json.dumps(claims),
         },
     )
+    resp.raise_for_status()
+    return resp

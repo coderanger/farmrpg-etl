@@ -31,8 +31,8 @@ log = structlog.stdlib.get_logger(mod="main")
 
 # Imports just to register data sinks.
 from . import bots  # noqa
+from . import firestore  # noqa
 from .db import chat, user  # noqa
-from .firestore import chat  # noqa
 
 
 @EVENTS.on("chat")
@@ -46,14 +46,14 @@ async def on_chat(msg: Message):
 
 
 @EVENTS.on("new_user_snapshot")
-async def on_snap(snap: UserSnapshot):
+async def on_snap(snap: UserSnapshot, last_snap: UserSnapshot | None):
     print(f"Updated snapshot for {snap.username} ({snap.user.id})")
 
 
 async def start_etl():
     log.info("Starting ETL processing")
-    create_periodic_task(OnlineScraper().run, 600, name="online-scraper")
     create_periodic_task(MailboxScraper().run, 10, name="mailbox-scraper")
+    create_periodic_task(OnlineScraper().run, 600, name="online-scraper")
     channels = ["help", "global", "spoilers", "trade", "giveaways", "trivia", "staff"]
     # channels = ["global", "help"]
     for channel in channels:

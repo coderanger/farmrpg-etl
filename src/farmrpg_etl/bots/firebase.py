@@ -1,7 +1,7 @@
 from ..db import objects
 from ..events import EVENTS
 from ..firebase import set_custom_user_claims
-from ..models.user import User, UserSnapshot
+from ..models.user import User, UserSnapshot, get_custom_claims
 from .base import BotMessage
 
 
@@ -21,12 +21,8 @@ async def on_register(msg: BotMessage):
             await objects(User).create(id=user_id, firebase_uid=msg.args)
 
         snap = await objects(UserSnapshot).order_by("-ts").first(user__id=user_id)
-        if snap is not None and (snap.is_farmhand or snap.is_ranger):
-            role = "ranger" if snap.is_ranger else "farmhand"
-            resp = await set_custom_user_claims(
-                msg.args, {"username": snap.username, "role": role}
-            )
-            resp.raise_for_status()
+        if snap is not None:
+            await set_custom_user_claims(msg.args, get_custom_claims(snap))
     except Exception:
         await msg.reply(
             "Something went wrong, please contact Coderanger for assistance."

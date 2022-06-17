@@ -22,3 +22,12 @@ class UserSnapshot:
     username: str
     is_farmhand: bool = False
     is_ranger: bool = False
+
+
+def get_custom_claims(snap: UserSnapshot):
+    claims = {"username": snap.username}
+    if snap.is_farmhand:
+        claims["role"] = "farmhand"
+    if snap.is_ranger:
+        claims["role"] = "ranger"
+    return claims
