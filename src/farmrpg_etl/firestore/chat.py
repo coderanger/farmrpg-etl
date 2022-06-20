@@ -8,6 +8,7 @@ from google.cloud import firestore
 from ..events import EVENTS
 from ..models.chat import Message
 from ..utils.cache import FixedSizeCache
+from ..utils.datetime import now
 
 MENTION_RE = re.compile(r"@([^:\s]+(?:[^:]{0,29}?[^:\s](?=:))?)")
 
@@ -64,10 +65,10 @@ async def on_flag(msg: Message):
             .collection("chats")
             .document(msg_id)
             .collection("mod")
-            .document("mod")
+            .document("flags")
         )
         log.debug("Writing flags", msg_id=msg_id, flags=msg.flags)
-        await doc_ref.set({"flags": msg.flags}, merge=True)
+        await doc_ref.set({"flags": msg.flags, "ts": now()})
     else:
         log.warn(
             "Unable to find message ID for flags",
