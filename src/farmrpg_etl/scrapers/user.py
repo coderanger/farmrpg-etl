@@ -102,3 +102,22 @@ class OnlineScraper:
             await asyncio.sleep(0.1)
 
         log.debug("Finished online scrape")
+
+
+@attrs.define
+class StaffListScraper:
+    """Make sure staff are always tracked."""
+
+    async def run(self) -> None:
+        log.debug("Starting staff scrape")
+        resp = await client.get("members.php", params={"type": "staff"})
+        resp.raise_for_status()
+        staff = _parse_online(resp.content)
+        # For each staff user, scrape them.
+        for username in staff:
+            asyncio.create_task(
+                UserScraper(username=username).run(), name=f"user-scraper-{username}"
+            )
+            await asyncio.sleep(0.1)
+
+        log.debug("Finished staff scrape")

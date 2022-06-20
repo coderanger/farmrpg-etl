@@ -20,7 +20,7 @@ from .models.chat import Message
 from .models.user import UserSnapshot
 from .scrapers.chat import ChatScraper
 from .scrapers.mailbox import MailboxScraper
-from .scrapers.user import OnlineScraper
+from .scrapers.user import OnlineScraper, StaffListScraper
 from .tasks import create_periodic_task
 
 UTC = ZoneInfo("UTC")
@@ -54,6 +54,7 @@ async def start_etl():
     log.info("Starting ETL processing")
     create_periodic_task(MailboxScraper().run, 10, name="mailbox-scraper")
     create_periodic_task(OnlineScraper().run, 600, name="online-scraper")
+    create_periodic_task(StaffListScraper().run, 3600, name="staff-list-scraper")
     channels = ["help", "global", "spoilers", "trade", "giveaways", "trivia", "staff"]
     # channels = ["global", "help"]
     for channel in channels:

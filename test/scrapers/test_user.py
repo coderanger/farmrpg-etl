@@ -17,6 +17,11 @@ def online(load_fixture) -> bytes:
     return load_fixture("online")
 
 
+@pytest.fixture
+def members_staff(load_fixture) -> bytes:
+    return load_fixture("members_staff")
+
+
 @freeze_time("2022-04-17 23:59:59")
 def test_parse_profile_ryber(profile_ryber):
     snap = _parse_profile("RybeR", profile_ryber)
@@ -32,3 +37,10 @@ def test_parse_online(online):
     assert len(online) == 1626
     assert online[0] == "-sam-"
     assert online[-1] == "Zzck"
+
+
+def test_parse_staff(members_staff):
+    staff = list(_parse_online(members_staff))
+    assert len(staff) == 25
+    assert staff[0] == "Atomiccow"
+    assert staff[-1] == "wsey54"
