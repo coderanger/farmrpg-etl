@@ -32,6 +32,11 @@ def flags(load_fixture) -> bytes:
     return load_fixture("flags")
 
 
+@pytest.fixture
+def chat_day_rollover(load_fixture) -> bytes:
+    return load_fixture("chat_day_rollover")
+
+
 @freeze_time("2022-04-17 23:59:59")
 def test_parse_chat(help_chat):
     chats = list(_parse_chat("help", help_chat))
@@ -122,6 +127,39 @@ def test_parse_chat_long(long_chat):
         'underline"></a>er)) pea&scy;ock -blam!-'
     )
     assert chats[2].deleted is False
+
+
+@freeze_time("2022-06-20 05:20:00")
+def test_parse_chat_day_rollover(chat_day_rollover):
+    chats = list(_parse_chat("", chat_day_rollover))
+    assert len(chats) == 9
+
+    assert chats[0].ts == datetime(2022, 6, 20, 4, 53, 17, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[0].content == "one"
+
+    assert chats[1].ts == datetime(2022, 6, 20, 4, 52, 18, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[1].content == "two"
+
+    assert chats[2].ts == datetime(2022, 6, 20, 4, 0, 30, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[2].content == "three"
+
+    assert chats[3].ts == datetime(2022, 6, 20, 3, 57, 41, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[3].content == "four"
+
+    assert chats[4].ts == datetime(2022, 6, 19, 5, 11, 1, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[4].content == "five"
+
+    assert chats[5].ts == datetime(2022, 6, 19, 5, 5, 47, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[5].content == "six"
+
+    assert chats[6].ts == datetime(2022, 6, 19, 3, 30, 23, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[6].content == "seven"
+
+    assert chats[7].ts == datetime(2022, 6, 18, 16, 29, 50, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[7].content == "eight"
+
+    assert chats[8].ts == datetime(2022, 6, 18, 15, 33, 55, tzinfo=ZoneInfo(key="UTC"))
+    assert chats[8].content == "nine"
 
 
 @freeze_time("2022-04-17 23:59:59")

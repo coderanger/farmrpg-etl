@@ -33,18 +33,22 @@ def _parse_chat(room: str, content: bytes) -> Iterable[Message]:
     # This has a bunch of ugly casts because the type stubs for BS aren't great.
     # (or rather the interface isn't built for strong typing, sigh)
     root = BeautifulSoup(content, "lxml")
-    now = datetime.now(tz=SERVER_TIME)
+    last_ts = datetime.now(tz=SERVER_TIME)
     for elm in root.select("div.chat-txt"):
         # Parse out the timestamp, which is weirdly difficult.
         ts_elm = elm.select_one("span")
         if ts_elm is None:
             raise ParseError(f"Unable to find timestamp: {content.decode()}")
         ts = datetime.strptime(ts_elm.text.strip(), "%I:%M:%S %p").replace(
-            year=now.year, month=now.month, day=now.day, tzinfo=now.tzinfo
+            year=last_ts.year,
+            month=last_ts.month,
+            day=last_ts.day,
+            tzinfo=last_ts.tzinfo,
         )
-        if ts > now:
+        if ts > last_ts:
             # Day rollover, this was actually yesterday.
             ts = ts - timedelta(days=1)
+        last_ts = ts
         # Find the chat message ID.
         chip_elm = elm.select_one("div.chip")
         if chip_elm is None:
