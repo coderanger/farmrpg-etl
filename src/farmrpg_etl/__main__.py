@@ -34,20 +34,20 @@ from . import bots  # noqa
 from . import firestore  # noqa
 from .db import chat, user  # noqa
 
+if False:
 
-@EVENTS.on("chat")
-async def on_chat(msg: Message):
-    if msg.ts < START_TIME and msg.deleted_ts is None:
-        return
-    if msg.deleted:
-        print(f"{msg.room} | DELETED {msg.username}: {msg.content}")
-    else:
-        print(f"{msg.room} | {msg.username}: {msg.content}")
+    @EVENTS.on("chat")
+    async def on_chat(msg: Message):
+        if msg.ts < START_TIME and msg.deleted_ts is None:
+            return
+        if msg.deleted:
+            print(f"{msg.room} | DELETED {msg.username}: {msg.content}")
+        else:
+            print(f"{msg.room} | {msg.username}: {msg.content}")
 
-
-@EVENTS.on("new_user_snapshot")
-async def on_snap(snap: UserSnapshot, last_snap: UserSnapshot | None):
-    print(f"Updated snapshot for {snap.username} ({snap.user.id})")
+    @EVENTS.on("new_user_snapshot")
+    async def on_snap(snap: UserSnapshot, last_snap: UserSnapshot | None):
+        print(f"Updated snapshot for {snap.username} ({snap.user.id})")
 
 
 async def start_etl():
